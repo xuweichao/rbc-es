@@ -50,11 +50,7 @@ public class EsController {
         return "索引创建成功";
     }
 
-    /**
-     *
-     * 创建索引
-     * @return
-     */
+
     @ApiOperation(value = "创建索引", notes = "创建索引")
     @GetMapping("/createIndex/{indexName}")
     public String createIndex(@PathVariable String indexName) {
@@ -66,11 +62,6 @@ public class EsController {
         return "索引创建成功";
     }
 
-    /**
-     * 插入记录
-     *
-     * @return
-     */
     @ApiOperation(value = " 插入记录", notes = " 插入记录")
     @GetMapping("/insertJson")
     public String insertJson() {
@@ -128,13 +119,7 @@ public class EsController {
         }
     }
 
-    /**
-     * 获取数据
-     * http://127.0.0.1:8080/es/getData?id=2018-04-25%2016:33:44
-     *
-     * @param id
-     * @return
-     */
+
 
     @ApiOperation(value = "获取数据", notes = "根据id获取数据")
     @GetMapping("/getData/{id}")
@@ -199,8 +184,10 @@ public class EsController {
     @GetMapping("/queryIntRangeData")
     public String queryIntRangeData() {
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        boolQuery.must(QueryBuilders.rangeQuery("age").from(21)
-                .to(25));
+        boolQuery.must(
+                QueryBuilders.rangeQuery("age")
+                        .from(21)
+                        .to(25));
         List<Map<String, Object>> list = ElasticsearchUtil.searchListData(indexName, esType, boolQuery, 10, null, null, null);
         return JSONObject.toJSONString(list);
     }
@@ -213,7 +200,8 @@ public class EsController {
     @GetMapping("/queryDateRangeData")
     public String queryDateRangeData() {
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        boolQuery.must(QueryBuilders.rangeQuery("date").from("2018-04-25T08:33:44.840Z")
+        boolQuery.must(QueryBuilders.rangeQuery("date")
+                .from("2018-04-25T08:33:44.840Z")
                 .to("2018-04-25T10:03:08.081Z"));
         List<Map<String, Object>> list = ElasticsearchUtil.searchListData(indexName, esType, boolQuery, 10, null, null, null);
         return JSONObject.toJSONString(list);
@@ -233,8 +221,10 @@ public class EsController {
     public String queryPage(String startPage, String pageSize) {
         if (StringUtil.isNotEmpty(startPage) && StringUtil.isNotEmpty(pageSize)) {
             BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-            boolQuery.must(QueryBuilders.rangeQuery("date").from("2018-04-25T08:33:44.840Z")
-                    .to("2018-04-25T10:03:08.081Z"));
+            boolQuery.must(
+                    QueryBuilders.rangeQuery("date")
+                            .from("2018-04-25T08:33:44.840Z")
+                            .to("2018-04-25T10:03:08.081Z"));
             EsPage list = ElasticsearchUtil.searchDataPage(indexName, esType, Integer.parseInt(startPage), Integer.parseInt(pageSize), boolQuery, null, null, null);
             return JSONObject.toJSONString(list);
         } else {

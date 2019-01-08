@@ -20,16 +20,16 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @BelongsProject: elensdata-oauth
@@ -43,13 +43,15 @@ import java.util.UUID;
 public class ElasticsearchUtil {
 
 
+
     @Autowired
     private TransportClient transportClient;
 
     private static TransportClient client;
 
     /**
-     * @PostContruct是spring框架的注解 spring容器初始化的时候执行该方法
+     * @PostContruct 是spring框架的注解
+     * spring容器初始化的时候执行该方法
      */
     @PostConstruct
     public void init() {
@@ -108,7 +110,7 @@ public class ElasticsearchUtil {
     }
 
     /**
-     * 数据添加，正定ID
+     * 数据添加
      *
      * @param jsonObject 要增加的数据
      * @param index      索引，类似数据库
@@ -242,14 +244,13 @@ public class ElasticsearchUtil {
         searchRequestBuilder.setQuery(query);
 
         // 分页应用
-        searchRequestBuilder.setFrom(startPage).setSize(pageSize);
+        searchRequestBuilder.setFrom((startPage - 1) * pageSize).setSize(pageSize);
 
         // 设置是否按查询匹配度排序
         searchRequestBuilder.setExplain(true);
 
         //打印的内容 可以在 Elasticsearch head 和 Kibana 上执行查询
         log.info("\n{}" + searchRequestBuilder);
-
         // 执行搜索,返回搜索响应信息
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
 
@@ -321,7 +322,7 @@ public class ElasticsearchUtil {
         long totalHits = searchResponse.getHits().totalHits;
         long length = searchResponse.getHits().getHits().length;
 
-        log.info("共查询到[{}]条数据,处理数据条数[{}]" + totalHits + length);
+        log.info("共查询到[{" + totalHits + "}]条数据,处理数据条数[{" + length + "}]");
 
         if (searchResponse.status().getStatus() == 200) {
             // 解析对象
@@ -348,7 +349,7 @@ public class ElasticsearchUtil {
 
             if (StringUtils.isNotEmpty(highlightField)) {
 
-                System.out.println("遍历 高亮结果集，覆盖 正常结果集" + searchHit.getSourceAsMap());
+                log.info("遍历 高亮结果集，覆盖 正常结果集" + searchHit.getSourceAsMap());
                 Text[] text = searchHit.getHighlightFields().get(highlightField).getFragments();
 
                 if (text != null) {
@@ -363,6 +364,55 @@ public class ElasticsearchUtil {
         }
 
         return sourceList;
+    }
+
+
+
+    /**
+     * 多种聚合类型 查询
+     * @param index
+     * @param type
+     * @param query
+     * @param size
+     * @param aggregationBuilders
+     * @return
+     */
+    public static Map<String, Object> getAggregations(String index, String type,
+                                                      QueryBuilder query,
+                                                      int size,
+                                                      List<AggregationBuilder> aggregationBuilders) {
+
+        SearchRequestBuilder searchBuilder = client
+                .prepareSearch(index)
+                .setQuery(query)
+                .setSize(size);
+        if (StringUtils.isNotEmpty(type)) {
+            searchBuilder.setTypes(type.split(","));
+        }
+
+        List<String> keyList = new ArrayList<>();
+        for (AggregationBuilder aggregationBuilder : aggregationBuilders) {
+            keyList.add(aggregationBuilder.getName());
+            searchBuilder = searchBuilder.addAggregation(aggregationBuilder);
+        }
+        log.info("query --->>> \n" + searchBuilder);
+
+        SearchResponse search = searchBuilder.get();
+        log.info("result --->>> \n" + search);
+
+        Map<String, Object> mapList = new HashMap<>();
+        for (String str : keyList) {
+            Terms terms = search.getAggregations().get(str);
+            List<Terms.Bucket> buckets = (List<Terms.Bucket>) terms.getBuckets();
+
+            Map<String, Object> map = new HashMap<>();
+            for (Terms.Bucket bt : buckets) {
+                log.info(bt.getKey() + "--" + bt.getDocCount());
+                map.put(bt.getKey().toString(), bt.getDocCount());
+            }
+            mapList.put(str, map);
+        }
+        return mapList;
     }
 
 }

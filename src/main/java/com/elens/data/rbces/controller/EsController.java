@@ -8,15 +8,16 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.java.Log;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @Log
 @Api("检索相关接口")
@@ -239,6 +240,38 @@ public class EsController {
         } else {
             return "startPage或者pageSize缺失";
         }
+    }
+
+    @ApiOperation(value = "es 多字段聚合测试", notes = "聚合测试")
+    @GetMapping("/aggs")
+    public @ResponseBody Map<String, Object> aggsTest() {
+        log.info("聚合测试===>>");
+        JSONObject aggs = new JSONObject();
+        aggs.put("性别", "sex_name.keyword");
+        aggs.put("年龄段", "age_range_name.raw");
+        aggs.put("月收入", "income_name.raw");
+        aggs.put("婚姻状况", "emotional_name.raw");
+        aggs.put("子女情况", "children_flag_name.raw");
+        aggs.put("教育水平", "education_name.raw");
+        aggs.put("职业", "profession_name.raw");
+
+        List<AggregationBuilder> list = new ArrayList();
+        for (Map.Entry<String, Object> agg : aggs.entrySet()) {
+            String key = agg.getKey();
+            log.info( key + "---" + agg.getValue().toString());
+            TermsAggregationBuilder aggregationBuilder = AggregationBuilders
+                    .terms(key)
+                    .field(agg.getValue().toString());
+            list.add(aggregationBuilder);
+        }
+
+        MatchAllQueryBuilder matchAllQueryBuilder = QueryBuilders.matchAllQuery();
+        Map<String, Object> map = ElasticsearchUtil.getAggregations(
+                indexName, esType,
+                matchAllQueryBuilder,
+                0,
+                list);
+        return map;
     }
 
 

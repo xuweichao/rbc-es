@@ -15,6 +15,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -28,15 +29,11 @@ public class EsController {
     @Autowired
     ElasticsearchUtil esUtil;
 
-    /**
-     * 测试索引
-     */
-    private String indexName = "test_index";
+    @Value("${elasticsearch.index.name}")
+    private String indexName;
 
-    /**
-     * 类型
-     */
-    private String esType = "external";
+    @Value("${elasticsearch.type.name}")
+    private String esType;
 
 
     @ApiOperation(value = "index 是否存在", notes = "index 是否存在")
@@ -70,7 +67,10 @@ public class EsController {
         jsonObject.put("age", 25);
         jsonObject.put("name", "j-" + new Random(100).nextInt());
         jsonObject.put("date", "www");
-        String id = ElasticsearchUtil.addData(jsonObject, indexName, esType, jsonObject.getString("id"));
+        String id = ElasticsearchUtil.addData(jsonObject,
+                indexName,
+                esType,
+                jsonObject.getString("id"));
         return id;
     }
 
@@ -112,7 +112,10 @@ public class EsController {
             jsonObject.put("age", 31);
             jsonObject.put("name", "修改");
             jsonObject.put("date", new Date());
-            ElasticsearchUtil.updateDataById(jsonObject, indexName, esType, id);
+            ElasticsearchUtil.updateDataById(jsonObject,
+                    indexName,
+                    esType,
+                    id);
             return "id=" + id;
         } else {
             return "id为空";
@@ -120,12 +123,14 @@ public class EsController {
     }
 
 
-
     @ApiOperation(value = "获取数据", notes = "根据id获取数据")
     @GetMapping("/getData/{id}")
     public String getData(@PathVariable String id) {
         if (StringUtil.isNotEmpty(id)) {
-            Map<String, Object> map = ElasticsearchUtil.searchDataById(indexName, esType, id, null);
+            Map<String, Object> map = ElasticsearchUtil.searchDataById(indexName,
+                    esType,
+                    id,
+                    null);
             return JSONObject.toJSONString(map);
         } else {
             return "id为空";
@@ -147,7 +152,14 @@ public class EsController {
         } else {
             boolQuery.must(QueryBuilders.matchQuery("name", "修"));
         }
-        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(indexName, esType, boolQuery, 10, null, null, null);
+        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(
+                indexName,
+                esType,
+                boolQuery,
+                10,
+                null,
+                null,
+                null);
         return JSONObject.toJSONString(list);
     }
 
@@ -160,7 +172,14 @@ public class EsController {
     @GetMapping("/queryWildcardData")
     public String queryWildcardData() {
         QueryBuilder queryBuilder = QueryBuilders.wildcardQuery("name.keyword", "j-*466");
-        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(indexName, esType, queryBuilder, 10, null, null, null);
+        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(
+                indexName,
+                esType,
+                queryBuilder,
+                10,
+                null,
+                null,
+                null);
         return JSONObject.toJSONString(list);
     }
 
@@ -172,7 +191,12 @@ public class EsController {
     @GetMapping("/queryRegexpData")
     public String queryRegexpData() {
         QueryBuilder queryBuilder = QueryBuilders.regexpQuery("name.keyword", "j--[0-9]{1,11}");
-        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(indexName, esType, queryBuilder, 10, null, null, null);
+        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(indexName,
+                esType, queryBuilder,
+                10,
+                null,
+                null,
+                null);
         return JSONObject.toJSONString(list);
     }
 
@@ -188,7 +212,14 @@ public class EsController {
                 QueryBuilders.rangeQuery("age")
                         .from(21)
                         .to(25));
-        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(indexName, esType, boolQuery, 10, null, null, null);
+        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(
+                indexName,
+                esType,
+                boolQuery,
+                10,
+                null,
+                null,
+                null);
         return JSONObject.toJSONString(list);
     }
 
@@ -203,7 +234,14 @@ public class EsController {
         boolQuery.must(QueryBuilders.rangeQuery("date")
                 .from("2018-04-25T08:33:44.840Z")
                 .to("2018-04-25T10:03:08.081Z"));
-        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(indexName, esType, boolQuery, 10, null, null, null);
+        List<Map<String, Object>> list = ElasticsearchUtil.searchListData(
+                indexName,
+                esType,
+                boolQuery,
+                10,
+                null,
+                null,
+                null);
         return JSONObject.toJSONString(list);
     }
 
@@ -225,7 +263,15 @@ public class EsController {
                     QueryBuilders.rangeQuery("date")
                             .from("2018-04-25T08:33:44.840Z")
                             .to("2018-04-25T10:03:08.081Z"));
-            EsPage list = ElasticsearchUtil.searchDataPage(indexName, esType, Integer.parseInt(startPage), Integer.parseInt(pageSize), boolQuery, null, null, null);
+            EsPage list = ElasticsearchUtil.searchDataPage(
+                    indexName,
+                    esType,
+                    Integer.parseInt(startPage),
+                    Integer.parseInt(pageSize),
+                    boolQuery,
+                    null,
+                    null,
+                    null);
             return JSONObject.toJSONString(list);
         } else {
             return "startPage或者pageSize缺失";
@@ -234,7 +280,8 @@ public class EsController {
 
     @ApiOperation(value = "es 多字段聚合测试", notes = "聚合测试")
     @GetMapping("/aggs")
-    public @ResponseBody Map<String, Object> aggsTest() {
+    public @ResponseBody
+    Map<String, Object> aggsTest() {
         log.info("聚合测试===>>");
         JSONObject aggs = new JSONObject();
         aggs.put("性别", "sex_name.keyword");
@@ -248,7 +295,7 @@ public class EsController {
         List<AggregationBuilder> list = new ArrayList();
         for (Map.Entry<String, Object> agg : aggs.entrySet()) {
             String key = agg.getKey();
-            log.info( key + "---" + agg.getValue().toString());
+            log.info(key + "---" + agg.getValue().toString());
             TermsAggregationBuilder aggregationBuilder = AggregationBuilders
                     .terms(key)
                     .field(agg.getValue().toString());

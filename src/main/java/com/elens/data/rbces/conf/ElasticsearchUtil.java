@@ -232,8 +232,8 @@ public class ElasticsearchUtil {
         if (StringUtils.isNotEmpty(highlightField)) {
             HighlightBuilder highlightBuilder = new HighlightBuilder();
 
-            //highlightBuilder.preTags("<span style='color:red' >");//设置前缀
-            //highlightBuilder.postTags("</span>");//设置后缀
+            highlightBuilder.preTags("<span style='color:red' >");//设置前缀
+            highlightBuilder.postTags("</span>");//设置后缀
 
             // 设置高亮字段
             highlightBuilder.field(highlightField);

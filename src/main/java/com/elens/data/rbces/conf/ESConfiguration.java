@@ -43,7 +43,6 @@ public class ESConfiguration {
     @Value("${elasticsearch.pool}")
     private String poolSize;
 
-    private TransportClient transportClient;
 
     /**
      * Bean name default 函数名字

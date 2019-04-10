@@ -1,5 +1,6 @@
 package com.elens.data.rbces.conf;
 
+import io.swagger.annotations.Api;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.Errors;
@@ -31,9 +32,9 @@ public class SwaggerConfig {
 
     private Docket docket() {
         return new Docket(DocumentationType.SWAGGER_2).select()
-                .apis(RequestHandlerSelectors.withClassAnnotation(RestController.class))//这里采用包含注解的方式来确定要显示的接口
+//                .apis(RequestHandlerSelectors.withClassAnnotation(RestController.class))//这里采用包含注解的方式来确定要显示的接口
 //                .apis(RequestHandlerSelectors.basePackage("com.elens.data.oauth.manager.controller"))    //这里采用包扫描的方式来确定要显示的接口
-//                .apis(RequestHandlerSelectors.withClassAnnotation(Api.class))
+                .apis(RequestHandlerSelectors.withClassAnnotation(Api.class))
                 .paths(PathSelectors.any())
                 .build()
                 .ignoredParameterTypes(Errors.class)

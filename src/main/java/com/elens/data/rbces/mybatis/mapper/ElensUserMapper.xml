@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elens.data.rbces.mybatis.mapper.ElensUserMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.elens.data.rbces.mybatis.entity.ElensUser">
+        <id column="user_id" property="userId"/>
+        <result column="user_name" property="userName"/>
+        <result column="user_company" property="userCompany"/>
+        <result column="user_password" property="userPassword"/>
+        <result column="token" property="token"/>
+        <result column="create_time" property="createTime"/>
+        <result column="dr" property="dr"/>
+        <result column="reserve1" property="reserve1"/>
+        <result column="reserve2" property="reserve2"/>
+        <result column="accuracy" property="accuracy"/>
+        <result column="total_label" property="totalLabel"/>
+        <result column="status" property="status"/>
+        <result column="name" property="name"/>
+        <result column="sfxtyh" property="sfxtyh"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        user_id, user_name, user_company, user_password, token, create_time, dr, reserve1, reserve2, accuracy, total_label, status, name, sfxtyh
+    </sql>
+    <select id="getGroupByCompany" resultType="java.util.Map">
+    select
+    user_company as userName,
+    count(1) as  num
+    from elens_user
+    where user_name like '测试%' and user_company!=''
+    group by user_company
+    </select>
+</mapper>

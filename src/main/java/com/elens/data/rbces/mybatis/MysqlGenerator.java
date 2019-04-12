@@ -98,8 +98,10 @@ public class MysqlGenerator {
         strategy.setNaming(NamingStrategy.underline_to_camel)
                 //设置设置列命名  underline_to_camel 底线变驼峰
                 .setColumnNaming(NamingStrategy.underline_to_camel)
-                //.setSuperEntityClass("com.maoxs.pojo")//设置继承类
-                //.setSuperControllerClass("com.maoxs.controller")//设置继承类
+                //设置继承类
+                //.setSuperEntityClass("com.maoxs.pojo")
+                //设置继承类
+                //.setSuperControllerClass("com.maoxs.controller")
                 //是否加入lombok
                 .setEntityLombokModel(true)
                 .setRestControllerStyle(true)

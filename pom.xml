@@ -35,16 +35,7 @@
             <artifactId>transport</artifactId>
             <version>6.0.1</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.elasticsearch</groupId>-->
-            <!--<artifactId>elasticsearch</artifactId>-->
-            <!--<version>6.0.1</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.elasticsearch.plugin</groupId>-->
-            <!--<artifactId>transport-netty4-client</artifactId>-->
-            <!--<version>6.0.1</version>-->
-        <!--</dependency>-->
+
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>
@@ -105,8 +96,8 @@
         </dependency>
         <dependency>
             <groupId>org.freemarker</groupId>
-            <artifactId>freemarker-gae</artifactId>
-            <version>2.3.18</version>
+            <artifactId>freemarker</artifactId>
+            <version>2.3.28</version>
         </dependency>
         <!-- 模板引擎 -->
         <dependency>
@@ -119,6 +110,12 @@
             <artifactId>druid</artifactId>
             <version>1.0.9</version>
         </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.5.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

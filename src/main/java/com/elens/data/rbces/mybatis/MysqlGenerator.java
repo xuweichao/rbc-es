@@ -2,18 +2,14 @@ package com.elens.data.rbces.mybatis;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.generator.AutoGenerator;
 import com.baomidou.mybatisplus.generator.InjectionConfig;
 import com.baomidou.mybatisplus.generator.config.*;
-import com.baomidou.mybatisplus.generator.config.po.TableInfo;
 import com.baomidou.mybatisplus.generator.config.rules.DateType;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
-import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.ResourceBundle;
 
 /**
  * @BelongsProject: rbc-es
@@ -24,6 +20,7 @@ import java.util.List;
  */
 public class MysqlGenerator {
     private static String projectPath = System.getProperty("user.dir");
+    //父包路径
     private static String parentPackageName = "com.elens.data.rbces";
 
     /**
@@ -64,13 +61,19 @@ public class MysqlGenerator {
      */
     public static DataSourceConfig dataSourceConfig() {
         DataSourceConfig dataSourceConfig = new DataSourceConfig();
+        ResourceBundle rootResource = ResourceBundle.getBundle("application");
+        String url=rootResource.getString("spring.datasource.url");
+        String username=rootResource.getString("spring.datasource.username");
+        String password=rootResource.getString("spring.datasource.password");
+        String driverClassName=rootResource.getString("spring.datasource.driver-class-name");
+
         dataSourceConfig
                 .setDbType(DbType.MYSQL)
-                .setUrl("jdbc:mysql://172.16.199.40:3306/exchange1?useUnicode=true&characterEncoding=gbk&useSSL=false&serverTimezone=GMT%2B8")
-                .setDriverName("com.mysql.cj.jdbc.Driver")
-                .setUsername("root")
-                //.setSchemaName("public")
-                .setPassword("elensdata@zx123");
+                .setUrl(url)
+                .setDriverName(driverClassName)
+                .setUsername(username)
+//                .setSchemaName("public")
+                .setPassword(password);
         return dataSourceConfig;
     }
 

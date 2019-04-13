@@ -2,13 +2,18 @@ package com.elens.data.rbces.mybatis;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.generator.AutoGenerator;
 import com.baomidou.mybatisplus.generator.InjectionConfig;
 import com.baomidou.mybatisplus.generator.config.*;
+import com.baomidou.mybatisplus.generator.config.po.TableInfo;
 import com.baomidou.mybatisplus.generator.config.rules.DateType;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
+import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
 /**
@@ -22,6 +27,8 @@ public class MysqlGenerator {
     private static String projectPath = System.getProperty("user.dir");
     //父包路径
     private static String parentPackageName = "com.elens.data.rbces";
+    //作者名字
+    private static String authorName = "xuweichao";
 
     /**
      * 全局设置
@@ -35,7 +42,7 @@ public class MysqlGenerator {
                 // 是否支持 AR
                 .setActiveRecord(true)
                 //设置作者名字
-                .setAuthor("xuweichao")
+                .setAuthor(authorName)
                 //文件覆盖(全新文件)
                 .setFileOverride(true)
                 //主键策略
@@ -62,10 +69,10 @@ public class MysqlGenerator {
     public static DataSourceConfig dataSourceConfig() {
         DataSourceConfig dataSourceConfig = new DataSourceConfig();
         ResourceBundle rootResource = ResourceBundle.getBundle("application");
-        String url=rootResource.getString("spring.datasource.url");
-        String username=rootResource.getString("spring.datasource.username");
-        String password=rootResource.getString("spring.datasource.password");
-        String driverClassName=rootResource.getString("spring.datasource.driver-class-name");
+        String url = rootResource.getString("spring.datasource.url");
+        String username = rootResource.getString("spring.datasource.username");
+        String password = rootResource.getString("spring.datasource.password");
+        String driverClassName = rootResource.getString("spring.datasource.driver-class-name");
 
         dataSourceConfig
                 .setDbType(DbType.MYSQL)
@@ -120,23 +127,24 @@ public class MysqlGenerator {
             }
         };
 
-//        // 自定义输出配置
-//        List<FileOutConfig> focList = new ArrayList<>();
-//        // 如果模板引擎是 freemarker
-//        String templatePath = "/templates/mapper.xml.ftl";
-//        // 如果模板引擎是 velocity
-//        // String templatePath = "/templates/mapper.xml.vm";
-//
-//        // 自定义配置会被优先输出
-//        focList.add(new FileOutConfig(templatePath) {
-//            @Override
-//            public String outputFile(TableInfo tableInfo) {
-//                // 自定义输出文件名 ， 如果你 Entity 设置了前后缀、此处注意 xml 的名称会跟着发生变化！！
-//                return projectPath + "/src/main/resources/mapper/" + moduleName
-//                        + "/" + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
-//            }
-//        });
+        // 自定义输出配置
+        List<FileOutConfig> focList = new ArrayList<>();
+        // 如果模板引擎是 freemarker
+        String templatePath = "/templates/mapper.xml.ftl";
+        // 如果模板引擎是 velocity
+        // String templatePath = "/templates/mapper.xml.vm";
 
+        // 自定义配置会被优先输出
+        focList.add(new FileOutConfig(templatePath) {
+            @Override
+            public String outputFile(TableInfo tableInfo) {
+                // 自定义输出文件名 ， 如果你 Entity 设置了前后缀、此处注意 xml 的名称会跟着发生变化！！
+                return projectPath + "/src/main/java/com/elens/data/rbces/mybatis/mapper/"
+//                        + moduleName + "/"
+                        + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
+            }
+        });
+        injectionConfig.setFileOutConfigList(focList);
         return injectionConfig;
     }
 
@@ -181,7 +189,7 @@ public class MysqlGenerator {
         TemplateConfig templateConfig = new TemplateConfig();
 
         // 配置自定义输出模板
-        //指定自定义模板路径，注意不要带上.ftl/.vm, 会根据使用的模板引擎自动识别
+        //指定自定义模板路径，不要带上.ftl/.vm, 会根据使用的模板引擎自动识别
         // templateConfig.setEntity("templates/entity2.java");
         // templateConfig.setService();
         templateConfig.setController("/templates/controller.java");
@@ -197,13 +205,14 @@ public class MysqlGenerator {
                 .setGlobalConfig(globalConfig())
                 .setDataSource(dataSourceConfig())
                 .setPackageInfo(packageConfig(moduleName))
-                .setStrategy(strategyConfig(moduleName, tableName));
-//              选择 freemarker 引擎需要指定如下加，注意 pom 依赖必须有！默认 Veloctiy
-//                .setTemplateEngine(new FreemarkerTemplateEngine());
+                .setStrategy(strategyConfig(moduleName, tableName))
+//              选择 freemarker 引擎需要指定如下，注意 pom 依赖必须有！默认 Veloctiy
+                .setTemplateEngine(new FreemarkerTemplateEngine())
+                ;
         mpg.execute();
     }
 
     public static void main(String[] args) {
-        Generator(null, new String[]{"elens_report"});
+        Generator(null, new String[]{"oauth_client_details"});
     }
 }

@@ -23,6 +23,10 @@ public class MybatisConfig {
         return new DruidDataSource();
     }
 
+    /**
+     * 分页拦截器
+     * @return
+     */
     @Bean
     public PaginationInterceptor paginationInterceptor() {
         return new PaginationInterceptor();

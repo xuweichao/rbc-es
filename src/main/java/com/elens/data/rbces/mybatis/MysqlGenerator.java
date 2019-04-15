@@ -93,7 +93,6 @@ public class MysqlGenerator {
         PackageConfig packageConfig = new PackageConfig();
         //配置父包路径
         packageConfig.setParent(parentPackageName)
-
                 .setMapper("mybatis.mapper")
                 .setXml("mybatis.mapper")
                 .setEntity("mybatis.entity")
@@ -138,13 +137,21 @@ public class MysqlGenerator {
         focList.add(new FileOutConfig(templatePath) {
             @Override
             public String outputFile(TableInfo tableInfo) {
-                // 自定义输出文件名 ， 如果你 Entity 设置了前后缀、此处注意 xml 的名称会跟着发生变化！！
-                return projectPath + "/src/main/java/com/elens/data/rbces/mybatis/mapper/"
-//                        + moduleName + "/"
-                        + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
+
+                if (StringUtils.isEmpty(moduleName)) {
+                    // 自定义输出文件名 ， 如果你 Entity 设置了前后缀、此处注意 xml 的名称会跟着发生变化！！
+                    return projectPath + "/src/main/java/com/elens/data/rbces/mybatis/mapper/"
+                            + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
+                } else {
+                    return projectPath + "/src/main/java/com/elens/data/rbces/mybatis/mapper/"
+                            + moduleName + "/"
+                            + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
+                }
+
             }
         });
         injectionConfig.setFileOutConfigList(focList);
+
         return injectionConfig;
     }
 
@@ -189,7 +196,7 @@ public class MysqlGenerator {
         TemplateConfig templateConfig = new TemplateConfig();
 
         // 配置自定义输出模板
-        //指定自定义模板路径，不要带上.ftl/.vm, 会根据使用的模板引擎自动识别
+        //指定自定义模板路径，注意不要带上.ftl/.vm, 会根据使用的模板引擎自动识别
         // templateConfig.setEntity("templates/entity2.java");
         // templateConfig.setService();
         templateConfig.setController("/templates/controller.java");
@@ -206,13 +213,12 @@ public class MysqlGenerator {
                 .setDataSource(dataSourceConfig())
                 .setPackageInfo(packageConfig(moduleName))
                 .setStrategy(strategyConfig(moduleName, tableName))
-//              选择 freemarker 引擎需要指定如下，注意 pom 依赖必须有！默认 Veloctiy
-                .setTemplateEngine(new FreemarkerTemplateEngine())
-                ;
+//              选择 freemarker 引擎需要指定如下加，注意 pom 依赖必须有！默认 Veloctiy
+                .setTemplateEngine(new FreemarkerTemplateEngine());
         mpg.execute();
     }
 
     public static void main(String[] args) {
-        Generator(null, new String[]{"oauth_client_details"});
+        Generator(null, new String[]{"elens_report"});
     }
 }

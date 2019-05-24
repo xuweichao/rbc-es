@@ -1,13 +1,9 @@
 package com.elens.data.rbces.conf;
 
-import com.alibaba.fastjson.JSONObject;
 import com.elens.data.rbces.vo.EsPage;
 import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
-import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
+import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
@@ -16,14 +12,20 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.text.Text;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.bucket.histogram.InternalDateHistogram;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -34,20 +36,20 @@ import java.util.*;
 /**
  * @BelongsProject: elensdata-oauth
  * @BelongsPackage: com.elens.data.rbces.conf
- * @Author: admin
+ * @Author: xuweichao
  * @CreateTime: 2018-12-29 14:07
- * @Description: ${Description}
+ * @Description: es 工具类
  */
 @Log
 @Component
 public class ElasticsearchUtil {
 
 
-
     @Autowired
     private TransportClient transportClient;
 
     private static TransportClient client;
+
 
     /**
      * @PostContruct 是spring框架的注解
@@ -58,85 +60,34 @@ public class ElasticsearchUtil {
         client = this.transportClient;
     }
 
-    /**
-     * 创建索引
-     *
-     * @param indexName
-     * @return
-     */
-
-    public static boolean createIndex(String indexName) {
-        if (!isIndexExist(indexName)) {
-            log.info("Index is not exits!");
-        }
-        CreateIndexResponse indexresponse = client.admin().indices().prepareCreate(indexName).execute().actionGet();
-        log.info("执行建立成功。" + indexresponse.isAcknowledged());
-        return indexresponse.isAcknowledged();
-    }
-
-    /**
-     * 删除索引
-     *
-     * @param index
-     * @return
-     */
-    public static boolean deleteIndex(String index) {
-        if (!isIndexExist(index)) {
-            log.info("Index is not exits!");
-        }
-        DeleteIndexResponse dResponse = client.admin().indices().prepareDelete(index).execute().actionGet();
-        if (dResponse.isAcknowledged()) {
-            log.info("delete index " + index + " successfully!");
-        } else {
-            log.info("Fail to delete index " + index);
-        }
-        return dResponse.isAcknowledged();
-    }
-
-    /**
-     * 判断索引是否存在
-     *
-     * @param index
-     * @return
-     */
-    public static boolean isIndexExist(String index) {
-        IndicesExistsResponse inExistsResponse = client.admin().indices().exists(new IndicesExistsRequest(index)).actionGet();
-        if (inExistsResponse.isExists()) {
-            log.info("Index [" + index + "] is exist!");
-        } else {
-            log.info("Index [" + index + "] is not exist!");
-        }
-        return inExistsResponse.isExists();
-    }
 
     /**
      * 数据添加
      *
-     * @param jsonObject 要增加的数据
-     * @param index      索引，类似数据库
-     * @param type       类型，类似表
-     * @param id         数据ID
+     * @param data  要增加的数据
+     * @param index 索引，类似数据库
+     * @param type  类型，类似表
+     * @param id    数据ID
      * @return
      */
-    public static String addData(JSONObject jsonObject, String index, String type, String id) {
+    public static String addData(Map<String, Object> data, String index, String type, String id) {
 
-        IndexResponse response = client.prepareIndex(index, type, id).setSource(jsonObject).get();
+        IndexResponse response = client.prepareIndex(index, type, id).setSource(data).get();
 
         log.info("addData response status:{},id:{}" + response.status().getStatus() + "  " + response.getId());
-
         return response.getId();
     }
 
     /**
-     * 数据添加
+     * 数据添加 自动生成id
      *
-     * @param jsonObject 要增加的数据
-     * @param index      索引，类似数据库
-     * @param type       类型，类似表
+     * @param data  要增加的数据
+     * @param index 索引，类似数据库
+     * @param type  类型，类似表
      * @return
      */
-    public static String addData(JSONObject jsonObject, String index, String type) {
-        return addData(jsonObject, index, type, UUID.randomUUID().toString().replaceAll("-", "").toUpperCase());
+    public static String addData(Map<String, Object> data, String index, String type) {
+        return addData(data, index, type, UUID.randomUUID().toString().replaceAll("-", "").toUpperCase());
     }
 
     /**
@@ -156,20 +107,20 @@ public class ElasticsearchUtil {
     /**
      * 通过ID 更新数据
      *
-     * @param jsonObject 要增加的数据
-     * @param index      索引，类似数据库
-     * @param type       类型，类似表
-     * @param id         数据ID
+     * @param map   要增加的数据
+     * @param index 索引，类似数据库
+     * @param type  类型，类似表
+     * @param id    数据ID
      * @return
      */
-    public static void updateDataById(JSONObject jsonObject, String index, String type, String id) {
+    public static UpdateResponse updateDataById(Map<String, Object> map, String index, String type, String id) {
 
         UpdateRequest updateRequest = new UpdateRequest();
 
-        updateRequest.index(index).type(type).id(id).doc(jsonObject);
+        updateRequest.index(index).type(type).id(id).doc(map);
 
-        client.update(updateRequest);
-
+        ActionFuture<UpdateResponse> update = client.update(updateRequest);
+        return update.actionGet();
     }
 
     /**
@@ -188,7 +139,6 @@ public class ElasticsearchUtil {
         if (StringUtils.isNotEmpty(fields)) {
             getRequestBuilder.setFetchSource(fields.split(","), null);
         }
-
         GetResponse getResponse = getRequestBuilder.execute().actionGet();
 
         return getResponse.getSource();
@@ -211,7 +161,8 @@ public class ElasticsearchUtil {
     public static EsPage searchDataPage(String index, String type,
                                         int startPage, int pageSize,
                                         QueryBuilder query, String fields,
-                                        String sortField, String highlightField) {
+                                        String sortField, String highlightField, SortOrder sortOrder) {
+
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(index);
         if (StringUtils.isNotEmpty(type)) {
             searchRequestBuilder.setTypes(type.split(","));
@@ -225,10 +176,14 @@ public class ElasticsearchUtil {
 
         //排序字段
         if (StringUtils.isNotEmpty(sortField)) {
-            searchRequestBuilder.addSort(sortField, SortOrder.DESC);
+            if (sortOrder != null) {
+                searchRequestBuilder.addSort(sortField, sortOrder);
+            } else {
+                searchRequestBuilder.addSort(sortField, SortOrder.DESC);
+
+            }
         }
 
-        // 高亮（xxx=111,aaa=222）
         if (StringUtils.isNotEmpty(highlightField)) {
             HighlightBuilder highlightBuilder = new HighlightBuilder();
 
@@ -240,14 +195,13 @@ public class ElasticsearchUtil {
             searchRequestBuilder.highlighter(highlightBuilder);
         }
 
-        //searchRequestBuilder.setQuery(QueryBuilders.matchAllQuery());
         searchRequestBuilder.setQuery(query);
 
         // 分页应用
         searchRequestBuilder.setFrom((startPage - 1) * pageSize).setSize(pageSize);
 
         // 设置是否按查询匹配度排序
-        searchRequestBuilder.setExplain(true);
+        searchRequestBuilder.setExplain(false);
 
         //打印的内容 可以在 Elasticsearch head 和 Kibana 上执行查询
         log.info("\n{}" + searchRequestBuilder);
@@ -263,7 +217,12 @@ public class ElasticsearchUtil {
             // 解析对象
             List<Map<String, Object>> sourceList = setSearchResponse(searchResponse, highlightField);
 
-            return new EsPage(startPage, pageSize, (int) totalHits, sourceList);
+            if (sourceList.size() == 0) {
+                return null;
+            } else {
+
+                return new EsPage(startPage, pageSize, (int) totalHits, sourceList);
+            }
         }
 
         return null;
@@ -294,7 +253,7 @@ public class ElasticsearchUtil {
 
         if (StringUtils.isNotEmpty(highlightField)) {
             HighlightBuilder highlightBuilder = new HighlightBuilder();
-// 设置高亮字段
+            // 设置高亮字段
             highlightBuilder.field(highlightField);
             searchRequestBuilder.highlighter(highlightBuilder);
         }
@@ -315,14 +274,14 @@ public class ElasticsearchUtil {
         }
 
         //打印的内容 可以在 Elasticsearch head 和 Kibana 上执行查询
-        log.info("\n{}" + searchRequestBuilder);
+        log.info("\n" + searchRequestBuilder);
 
         SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
 
         long totalHits = searchResponse.getHits().totalHits;
         long length = searchResponse.getHits().getHits().length;
 
-        log.info("共查询到[{" + totalHits + "}]条数据,处理数据条数[{" + length + "}]");
+//        log.info("共查询到[{" + totalHits + "}]条数据,处理数据条数[{" + length + "}]");
 
         if (searchResponse.status().getStatus() == 200) {
             // 解析对象
@@ -349,7 +308,7 @@ public class ElasticsearchUtil {
 
             if (StringUtils.isNotEmpty(highlightField)) {
 
-                log.info("遍历 高亮结果集，覆盖 正常结果集" + searchHit.getSourceAsMap());
+//                log.info("遍历 高亮结果集，覆盖 正常结果集" + searchHit.getSourceAsMap());
                 Text[] text = searchHit.getHighlightFields().get(highlightField).getFragments();
 
                 if (text != null) {
@@ -367,9 +326,9 @@ public class ElasticsearchUtil {
     }
 
 
-
     /**
      * 多种聚合类型 查询
+     *
      * @param index
      * @param type
      * @param query
@@ -378,14 +337,14 @@ public class ElasticsearchUtil {
      * @return
      */
     public static Map<String, Object> getAggregations(String index, String type,
-                                                      QueryBuilder query,
-                                                      int size,
+                                                      QueryBuilder query, int size,
                                                       List<AggregationBuilder> aggregationBuilders) {
 
         SearchRequestBuilder searchBuilder = client
-                .prepareSearch(index)
+                .prepareSearch(index.split(","))
                 .setQuery(query)
                 .setSize(size);
+
         if (StringUtils.isNotEmpty(type)) {
             searchBuilder.setTypes(type.split(","));
         }
@@ -400,19 +359,139 @@ public class ElasticsearchUtil {
         SearchResponse search = searchBuilder.get();
         log.info("result --->>> \n" + search);
 
-        Map<String, Object> mapList = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         for (String str : keyList) {
-            Terms terms = search.getAggregations().get(str);
-            List<Terms.Bucket> buckets = (List<Terms.Bucket>) terms.getBuckets();
-
-            Map<String, Object> map = new HashMap<>();
-            for (Terms.Bucket bt : buckets) {
-                log.info(bt.getKey() + "--" + bt.getDocCount());
-                map.put(bt.getKey().toString(), bt.getDocCount());
+            Aggregation agg = search.getAggregations().get(str);
+            if (agg == null) {
+                return null;
             }
-            mapList.put(str, map);
+            Map<String, Object> map = new HashMap<>();
+            if (agg instanceof Terms) {
+                List<Bucket> buckets = (List<Bucket>) ((Terms) agg).getBuckets();
+
+                for (Bucket bt : buckets) {
+                    map.put(bt.getKey().toString(), bt.getDocCount());
+                }
+                result.put(str, map);
+            } else if (agg instanceof Histogram) {
+                List<InternalDateHistogram.Bucket> buckets = ((InternalDateHistogram) agg).getBuckets();
+
+                for (InternalDateHistogram.Bucket bt : buckets) {
+                    map.put(bt.getKeyAsString(), bt.getDocCount());
+                }
+                result.put(str, map);
+            }
+
         }
-        return mapList;
+        return result;
     }
 
+
+
+
+    /**
+     * 输出大结果集
+     *
+     * @param index
+     * @param type
+     * @param fields
+     * @param sortedField
+     * @param size
+     * @param queryBuilder
+     * @return
+     */
+    public static List<Map<String, Object>> scollSearchListData(String index, String type,
+                                                                String fields, String sortedField,
+                                                                int size,
+                                                                QueryBuilder queryBuilder) {
+        SearchRequestBuilder searchRequestBuilder = client
+                .prepareSearch(index)
+                .setTypes(type)
+                .setQuery(queryBuilder)
+                .setSize(size)
+                .setScroll(new TimeValue(2000));
+        // 需要显示的字段，逗号分隔（缺省为全部字段）
+        if (StringUtils.isNotEmpty(fields)) {
+            searchRequestBuilder.setFetchSource(fields.split(","), null);
+        }
+        //设置排序的字段
+        if (StringUtils.isNotEmpty(sortedField)) {
+            searchRequestBuilder.addSort(SortBuilders.fieldSort(sortedField));
+        }
+        log.info("=={}\n" + searchRequestBuilder.toString());
+        SearchResponse response = searchRequestBuilder.execute().actionGet();
+        //获取总数量
+        long totalCount = response.getHits().getTotalHits();
+        //计算总页数,每次搜索数量为分片数*设置的size大小
+        int page = totalCount % size == 0 ? (int) totalCount / size : (int) totalCount / size + 1;
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (int i = 0; i < page; i++) {
+            //再次发送请求,并使用上次搜索结果的ScrollId
+            response = client.prepareSearchScroll(response.getScrollId())
+                    .setScroll(new TimeValue(20000)).execute()
+                    .actionGet();
+
+            for (SearchHit searchHit : response.getHits().getHits()) {
+                Map<String, Object> map = searchHit.getSourceAsMap();
+                list.add(map);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 获取符合查询条件的文档数量
+     *
+     * @param index
+     * @param type
+     * @param query
+     * @return
+     */
+    public static Long getDataCount(String index, String type, QueryBuilder query) {
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(index.split(","));
+        if (StringUtils.isNotEmpty(type)) {
+            searchRequestBuilder.setTypes(type.split(","));
+        }
+        searchRequestBuilder.setQuery(query);
+        searchRequestBuilder.setFetchSource(true);
+        searchRequestBuilder.setSize(0);
+        log.info("\n" + searchRequestBuilder);
+
+        SearchResponse searchResponse = searchRequestBuilder.execute().actionGet();
+        log.info("result --->>> \n" + searchResponse);
+
+        long totalHits = searchResponse.getHits().totalHits;
+        log.info("--totalHits--" + totalHits);
+
+        return totalHits;
+    }
+
+    /**
+     * 预处理数据 防止空指针
+     *
+     * @param data
+     * @param fields
+     */
+    public static void initData(Map<String, Object> data, String fields) {
+
+        String[] keys = fields.split(",");
+        initData(data, keys);
+    }
+
+    /**
+     * 预处理数据 防止空指针
+     *
+     * @param data
+     * @param keys 字段数组
+     */
+    public static void initData(Map<String, Object> data, String[] keys) {
+        for (int i = 0, size = keys.length; i < size; i++) {
+            Object str = null;
+            try {
+                str = data.get(keys[i]);
+            } catch (Exception e) {
+            }
+            data.put(keys[i], str == null ? "" : str);
+        }
+    }
 }

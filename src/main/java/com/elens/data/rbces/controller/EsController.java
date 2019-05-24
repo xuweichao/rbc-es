@@ -36,29 +36,6 @@ public class EsController {
     private String esType;
 
 
-    @ApiOperation(value = "index 是否存在", notes = "index 是否存在")
-    @GetMapping("exist/{indexName}")
-    public String isExist(@PathVariable String indexName) {
-        if (!ElasticsearchUtil.isIndexExist(indexName)) {
-            ElasticsearchUtil.createIndex(indexName);
-        } else {
-            return "索引已经存在";
-        }
-        return "索引创建成功";
-    }
-
-
-    @ApiOperation(value = "创建索引", notes = "创建索引")
-    @GetMapping("/createIndex/{indexName}")
-    public String createIndex(@PathVariable String indexName) {
-        if (!ElasticsearchUtil.isIndexExist(indexName)) {
-            ElasticsearchUtil.createIndex(indexName);
-        } else {
-            return "索引已经存在";
-        }
-        return "索引创建成功";
-    }
-
     @ApiOperation(value = " 插入记录", notes = " 插入记录")
     @GetMapping("/insertJson")
     public String insertJson() {
@@ -269,6 +246,7 @@ public class EsController {
                     Integer.parseInt(startPage),
                     Integer.parseInt(pageSize),
                     boolQuery,
+                    null,
                     null,
                     null,
                     null);

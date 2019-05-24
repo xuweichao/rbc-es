@@ -16,7 +16,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 /**
  * @BelongsProject: elensdata-oauth
  * @BelongsPackage: com.elens.data.oauth.manager.conf
- * @Author: admin
+ * @Author: xuweichao
  * @CreateTime: 2018-11-08 19:13
  * @Description: swagger 配置
  * http:localhost:port/swagger-ui.html
@@ -44,8 +44,8 @@ public class SwaggerConfig {
 
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-                .title("Oauth2.0授权中心 在线api文档")
-                .description("Oauth2.0授权中心")
+                .title("Swagger2 api文档")
+                .description("Swagger2 api文档")
                 .version("1.0.0")
                 .build();
 
